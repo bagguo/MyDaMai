@@ -14,6 +14,8 @@ import android.widget.Toast;
 import com.alibaba.fastjson.JSONObject;
 import com.bagguo.mydamai.R;
 import com.bagguo.mydamai.net.NetConfig;
+import com.bagguo.mydamai.net.NetFunction;
+import com.bagguo.mydamai.net.NetObserver;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -30,6 +32,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.Observable;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -93,7 +100,13 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         topicRecycle.setAdapter(adapter);
 
 
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+        String url = NetConfig.HOST + "article/list/0/json";
+
+        /**
+         * 请求方式1
+         * 使用okhttp请求网络；请求后将响应结果用handler发送至handler进行UI更新
+         */
+       /* HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
             @Override
             public void log(String message) {
                 Log.i(TAG, "log: ======" + message);
@@ -110,23 +123,22 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                 .build();
 
         final Request request = new Request.Builder()
-                .url(NetConfig.HOST + "article/list/0/json"
-
-
-                        /*"http://mapi.damai.cn/" +
-                        "ProjLst.aspx?" +
-                        "source=10101&" +
-                        "cc=0&" +
-                        "ps=20&" +
-                        "mc=0&" +
-                        "ot=0&" +
-                        "v=0&" +
-                        "appType=1&" +
-                        "osType=2&" +
-                        "p=1&" +
-                        "version=50609&" +
-                        "channel_from=xiaomi_market&" +
-                        "cityId=852"*/)
+                .url(url
+//                        "http://mapi.damai.cn/" +
+//                        "ProjLst.aspx?" +
+//                        "source=10101&" +
+//                        "cc=0&" +
+//                        "ps=20&" +
+//                        "mc=0&" +
+//                        "ot=0&" +
+//                        "v=0&" +
+//                        "appType=1&" +
+//                        "osType=2&" +
+//                        "p=1&" +
+//                        "version=50609&" +
+//                        "channel_from=xiaomi_market&" +
+//                        "cityId=852"
+                )
                 .build();
 
         //queue
@@ -149,15 +161,92 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                 String list = data.getString("datas");
                 List<FeedArticleBean> topics = JSONObject.parseArray(list, FeedArticleBean.class);
 
-                /**
-                 * 响应完成通过handler将数据发给handler进行UI更新
-                 */
+                // 响应完成通过handler将数据发给handler进行UI更新
+
                 Message message = handler.obtainMessage();
                 message.obj = topics;
                 message.what = 200;
                 handler.sendMessage(message);
             }
-        });
+        });*/
+
+        /**
+         * 请求方式2
+         * rxjava + okhttp
+         *
+         * 1.被观察者发布事件流 implements Function<String, String>.apply(String s)
+         * 2.事件完成后 观察者 订阅收到响应结果 implements Observer {
+         *     onSubscribe(Disposable d) {}
+         *     onNext(Object o) {}
+         *     onError(Throwable e) {}
+         *     onComplete() {}
+         * }
+         */
+
+        //被观察者
+        Observable.just(url)
+                .map(new NetFunction())//网络请求 ,
+                .map(new Function<String, List<FeedArticleBean>>() {//解析
+                    @Override
+                    public List<FeedArticleBean> apply(String s) throws Exception {
+
+                        JSONObject object = JSONObject.parseObject(s);
+                        JSONObject data = object.getJSONObject("data");
+                        String list = data.getString("datas");
+                        List<FeedArticleBean> articles = JSONObject.parseArray(list, FeedArticleBean.class);
+                        return articles;
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())//观察者指定主线程
+                .subscribeOn(Schedulers.io())//订阅
+                .subscribe(new NetObserver(context) {//订阅 观察者，处理相应动作
+                    @Override
+                    public void onNext(Object o) {
+                        super.onNext(o);
+                        fillData((List<FeedArticleBean>) o);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        super.onError(e);
+                        showError(e.getMessage());
+                    }
+                });
+
+        //===========
+        //RxJava  观察者模式 样例
+        //Observable   被观察者    按钮，当按钮被点击，就触发了观察者的操作
+        //Observer     观察者      Listener
+
+//    Observable<String> observable = Observable.just("url")
+//            .map(new Function<String, String>() {
+//                @Override
+//                public String apply(@NonNull String s) throws Exception {
+//                    //下载操作
+//                    return s;
+//                }
+//            });
+//
+//
+//
+//    Observer<String> observer=new Observer<String>() {
+//        @Override
+//        public void onSubscribe(Disposable d) { }
+//
+//        @Override
+//        public void onNext(String s) { }
+//
+//        @Override
+//        public void onError(Throwable e) { }
+//
+//        @Override
+//        public void onComplete() { }
+//    };
+//
+//        observable
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//            .subscribe(observer);
     }
 
     @Override
