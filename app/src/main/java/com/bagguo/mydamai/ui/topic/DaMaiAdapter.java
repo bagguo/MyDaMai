@@ -1,4 +1,4 @@
-package com.bagguo.mydamai;
+package com.bagguo.mydamai.ui.topic;
 
 import android.content.Context;
 import android.util.Log;
@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.bagguo.mydamai.R;
 
 import java.util.ArrayList;
 
@@ -22,9 +24,9 @@ public class DaMaiAdapter extends RecyclerView.Adapter<DaMaiAdapter.DaMaiViewHol
 
     private final LayoutInflater inflater;
     private Context context;
-    private ArrayList<String> data;
+    private ArrayList<FeedArticleBean> data;
 
-    public DaMaiAdapter(Context context, ArrayList<String> data) {
+    public DaMaiAdapter(Context context, ArrayList<FeedArticleBean> data) {
         this.context = context;
         this.data = data;
         inflater = LayoutInflater.from(context);
@@ -41,7 +43,8 @@ public class DaMaiAdapter extends RecyclerView.Adapter<DaMaiAdapter.DaMaiViewHol
 
     @Override
     public void onBindViewHolder(@NonNull DaMaiViewHolder holder, int position) {
-        holder.itemTopicTitle.setText(data.get(position));
+        String title = data.get(position).getTitle();
+        holder.itemTopicTitle.setText(title);
     }
 
     @Override
