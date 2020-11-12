@@ -54,10 +54,11 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
     SwipeRefreshLayout topicSwipe;
 
 
+    private Context mContext;
     private DaMaiAdapter adapter;
     private ArrayList<FeedArticleBean> data = new ArrayList<>();
 
-    private DaMaiHandler handler;
+//    private DaMaiHandler handler;
 
     public DaMaiFragment() {
 
@@ -71,7 +72,7 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
 
         View view = inflater.inflate(R.layout.fragment_damai, container, false);
         ButterKnife.bind(this, view);
-        handler = new DaMaiHandler(this);
+//        handler = new DaMaiHandler(this);
         return view;
     }
 
@@ -79,8 +80,8 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Context context = getContext();
-        if (context == null) return;
+        mContext = getContext();
+        if (mContext == null) return;
 
         topicSwipe.setColorSchemeColors(
                 Color.CYAN,
@@ -89,23 +90,172 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                 Color.RED);
         topicSwipe.setOnRefreshListener(this);
 
-        LinearLayoutManager mgr = new LinearLayoutManager(context);
+        LinearLayoutManager mgr = new LinearLayoutManager(mContext);
         topicRecycle.setLayoutManager(mgr);
 
+        topicRecycle.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            int lastPosition;
 
-        DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                //闲置
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    //是否需要加载更多
+                    if (lastPosition == data.size() - 1) {
+                        //上拉加载，判断是否是加载中的状态，
+                        //如果正在加载，则不会再去加载
+                        if (!topicSwipe.isRefreshing()) {
+                            addData();//添加数据
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                //得到recyclerview的布局管理器
+                RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
+                //实例化线性布局管理器
+                if (manager instanceof LinearLayoutManager) {
+                    //布局管理器找到最后一个可见的条目位置赋值给最后一个可见的条目
+                    int lastVisibleItemPosition = ((LinearLayoutManager) manager).findLastVisibleItemPosition();
+                    if (lastVisibleItemPosition != -1) {
+                        //得到最后一个条目
+                        lastPosition = lastVisibleItemPosition;
+                    }
+                }
+            }
+        });
+        DividerItemDecoration decoration = new DividerItemDecoration(mContext, DividerItemDecoration.VERTICAL);
         topicRecycle.addItemDecoration(decoration);
 
-        adapter = new DaMaiAdapter(context, data);
+        adapter = new DaMaiAdapter(mContext, data);
         topicRecycle.setAdapter(adapter);
 
 
-        String url = NetConfig.HOST + "article/list/0/json";
+        loadData();
+    }
 
-        /**
-         * 请求方式1
-         * 使用okhttp请求网络；请求后将响应结果用handler发送至handler进行UI更新
-         */
+    int page;
+    private void loadData() {
+        page = 0;
+        String url = NetConfig.HOST + "article/list/" + page + "/json";
+
+        //被观察者
+        Observable.just(url)
+                .map(new NetFunction())//网络请求 ,
+                .map(new Function<String, List<FeedArticleBean>>() {//解析
+                    @Override
+                    public List<FeedArticleBean> apply(String s) throws Exception {
+
+                        JSONObject object = JSONObject.parseObject(s);
+                        JSONObject data = object.getJSONObject("data");
+                        String list = data.getString("datas");
+                        List<FeedArticleBean> articles = JSONObject.parseArray(list, FeedArticleBean.class);
+                        return articles;
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())//观察者指定主线程
+                .subscribeOn(Schedulers.io())//订阅
+                .subscribe(new NetObserver(mContext) {//订阅 观察者，处理相应动作
+                    @Override
+                    public void onNext(Object o) {
+                        super.onNext(o);
+                        fillData((List<FeedArticleBean>) o);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        super.onError(e);
+                        showError(e.getMessage());
+                    }
+                });
+    }
+
+    private void addData() {
+        page++;
+        topicSwipe.setRefreshing(true);
+        String url = NetConfig.HOST + "article/list/" + page + "/json";
+
+        //被观察者
+        Observable.just(url)
+                .map(new NetFunction())//网络请求 ,
+                .map(new Function<String, List<FeedArticleBean>>() {//解析
+                    @Override
+                    public List<FeedArticleBean> apply(String s) throws Exception {
+
+                        JSONObject object = JSONObject.parseObject(s);
+                        JSONObject data = object.getJSONObject("data");
+                        String list = data.getString("datas");
+                        List<FeedArticleBean> articles = JSONObject.parseArray(list, FeedArticleBean.class);
+                        return articles;
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())//观察者指定主线程
+                .subscribeOn(Schedulers.io())//订阅
+                .subscribe(new NetObserver(mContext) {//订阅 观察者，处理相应动作
+                    @Override
+                    public void onNext(Object o) {
+                        super.onNext(o);
+                        fillData((List<FeedArticleBean>) o);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        super.onError(e);
+                        showError(e.getMessage());
+                    }
+                });
+    }
+
+    @Override
+    public void onRefresh() {
+        loadData();
+    }
+
+    public void fillData(List<FeedArticleBean> data) {
+
+        this.data.clear();
+        this.data.addAll(data);
+        adapter.notifyDataSetChanged();
+        topicSwipe.setRefreshing(false);
+
+    }
+
+    private void showError(String error) {
+        topicSwipe.setRefreshing(false);
+        Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+    }
+
+
+    /*static class DaMaiHandler extends Handler {
+        private WeakReference<DaMaiFragment> weakReference;
+
+        public DaMaiHandler(DaMaiFragment fragment) {
+            this.weakReference = new WeakReference<>(fragment);
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+
+            switch (msg.what) {
+                case 100:
+                    weakReference.get().showError(msg.obj.toString());
+                    break;
+                case 200:
+                    List<FeedArticleBean> list = (ArrayList<FeedArticleBean>) msg.obj;
+                    weakReference.get().fillData(list);
+                    break;
+            }
+        }
+    }*/
+    /**
+     * 请求方式1
+     * 使用okhttp请求网络；请求后将响应结果用handler发送至handler进行UI更新
+     */
        /* HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
             @Override
             public void log(String message) {
@@ -170,53 +320,22 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
             }
         });*/
 
-        /**
-         * 请求方式2
-         * rxjava + okhttp
-         *
-         * 1.被观察者发布事件流 implements Function<String, String>.apply(String s)
-         * 2.事件完成后 观察者 订阅收到响应结果 implements Observer {
-         *     onSubscribe(Disposable d) {}
-         *     onNext(Object o) {}
-         *     onError(Throwable e) {}
-         *     onComplete() {}
-         * }
-         */
-
-        //被观察者
-        Observable.just(url)
-                .map(new NetFunction())//网络请求 ,
-                .map(new Function<String, List<FeedArticleBean>>() {//解析
-                    @Override
-                    public List<FeedArticleBean> apply(String s) throws Exception {
-
-                        JSONObject object = JSONObject.parseObject(s);
-                        JSONObject data = object.getJSONObject("data");
-                        String list = data.getString("datas");
-                        List<FeedArticleBean> articles = JSONObject.parseArray(list, FeedArticleBean.class);
-                        return articles;
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread())//观察者指定主线程
-                .subscribeOn(Schedulers.io())//订阅
-                .subscribe(new NetObserver(context) {//订阅 观察者，处理相应动作
-                    @Override
-                    public void onNext(Object o) {
-                        super.onNext(o);
-                        fillData((List<FeedArticleBean>) o);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        super.onError(e);
-                        showError(e.getMessage());
-                    }
-                });
-
-        //===========
-        //RxJava  观察者模式 样例
-        //Observable   被观察者    按钮，当按钮被点击，就触发了观察者的操作
-        //Observer     观察者      Listener
+    /**
+     * 请求方式2
+     * rxjava + okhttp
+     *
+     * 1.被观察者发布事件流 implements Function<String, String>.apply(String s)
+     * 2.事件完成后 观察者 订阅收到响应结果 implements Observer {
+     *     onSubscribe(Disposable d) {}
+     *     onNext(Object o) {}
+     *     onError(Throwable e) {}
+     *     onComplete() {}
+     * }
+     */
+    //===========
+    //RxJava  观察者模式 样例
+    //Observable   被观察者    按钮，当按钮被点击，就触发了观察者的操作
+    //Observer     观察者      Listener
 
 //    Observable<String> observable = Observable.just("url")
 //            .map(new Function<String, String>() {
@@ -247,45 +366,4 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
 //                .subscribeOn(Schedulers.io())
 //                .observeOn(AndroidSchedulers.mainThread())
 //            .subscribe(observer);
-    }
-
-    @Override
-    public void onRefresh() {
-
-    }
-
-    public void fillData(List<FeedArticleBean> data) {
-
-        this.data.clear();
-        this.data.addAll(data);
-        adapter.notifyDataSetChanged();
-    }
-
-    private void showError(String error) {
-        Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-    }
-
-
-    static class DaMaiHandler extends Handler {
-        private WeakReference<DaMaiFragment> weakReference;
-
-        public DaMaiHandler(DaMaiFragment fragment) {
-            this.weakReference = new WeakReference<>(fragment);
-        }
-
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            super.handleMessage(msg);
-
-            switch (msg.what) {
-                case 100:
-                    weakReference.get().showError(msg.obj.toString());
-                    break;
-                case 200:
-                    List<FeedArticleBean> list = (ArrayList<FeedArticleBean>) msg.obj;
-                    weakReference.get().fillData(list);
-                    break;
-            }
-        }
-    }
 }
