@@ -16,9 +16,6 @@ import com.bagguo.mydamai.R;
 import com.bagguo.mydamai.net.NetConfig;
 import com.bagguo.mydamai.net.NetFunction;
 import com.bagguo.mydamai.net.NetObserver;
-import com.bagguo.mydamai.ui.topic.mvp.ITopicView;
-import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterImpl;
-import com.bagguo.mydamai.widget.LoadMoreRecycleView;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -47,13 +44,12 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 
-public class DaMaiFragment extends Fragment implements
-        SwipeRefreshLayout.OnRefreshListener, ITopicView, LoadMoreRecycleView.OnLoadMoreListener {
+public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
 
     public static final String TAG = DaMaiFragment.class.getSimpleName();
 
     @BindView(R.id.topic_recycle)
-    LoadMoreRecycleView topicRecycle;
+    RecyclerView topicRecycle;
     @BindView(R.id.topic_swipe)
     SwipeRefreshLayout topicSwipe;
 
@@ -61,7 +57,6 @@ public class DaMaiFragment extends Fragment implements
     private Context mContext;
     private DaMaiAdapter adapter;
     private ArrayList<FeedArticleBean> data = new ArrayList<>();
-    private TopicPresenterImpl topicPresenter;
 
 //    private DaMaiHandler handler;
 
@@ -98,20 +93,7 @@ public class DaMaiFragment extends Fragment implements
         LinearLayoutManager mgr = new LinearLayoutManager(mContext);
         topicRecycle.setLayoutManager(mgr);
 
-        DividerItemDecoration decoration =
-                new DividerItemDecoration(mContext, DividerItemDecoration.VERTICAL);
-        topicRecycle.addItemDecoration(decoration);
-
-        adapter = new DaMaiAdapter(mContext, data);
-        topicRecycle.setAdapter(adapter);
-
-
-        topicRecycle.setOnLoadMoreListener(this);
-
-        topicPresenter = new TopicPresenterImpl(this);
-        topicPresenter.loadData();
-    }
-/*topicRecycle.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        topicRecycle.addOnScrollListener(new RecyclerView.OnScrollListener() {
             int lastPosition;
 
             @Override
@@ -145,10 +127,18 @@ public class DaMaiFragment extends Fragment implements
                     }
                 }
             }
-        });*/
+        });
+        DividerItemDecoration decoration = new DividerItemDecoration(mContext, DividerItemDecoration.VERTICAL);
+        topicRecycle.addItemDecoration(decoration);
 
-//        loadData();
-    /*int page;
+        adapter = new DaMaiAdapter(mContext, data);
+        topicRecycle.setAdapter(adapter);
+
+
+        loadData();
+    }
+
+    int page;
     private void loadData() {
         page = 0;
         String url = NetConfig.HOST + "article/list/" + page + "/json";
@@ -182,56 +172,9 @@ public class DaMaiFragment extends Fragment implements
                         showError(e.getMessage());
                     }
                 });
-    }*/
-
-
-    @Override
-    public void onRefresh() {
-        topicPresenter.loadData();
     }
 
-
-    /**
-     * LoadMoreRecyclerview 中声明的接口
-     */
-    @Override
-    public void loadMore() {
-        topicPresenter.addData();
-    }
-
-    @Override
-    public void showError(String error) {
-        topicSwipe.setRefreshing(false);
-        Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void showLoading() {
-        topicSwipe.setRefreshing(true);
-    }
-
-    @Override
-    public void hideLoading() {
-        topicSwipe.setRefreshing(false);
-    }
-
-    @Override
-    public void fillData(List<FeedArticleBean> data, boolean isPull) {
-
-        if (isPull) {//下拉刷新清除之前的数据
-            this.data.clear();
-        } else {
-            topicRecycle.setRefreshing(false);
-        }
-        this.data.addAll(data);
-        adapter.notifyDataSetChanged();
-        topicSwipe.setRefreshing(false);
-    }
-
-    /**
-     * 不用mvp只用观察者模式
-     */
-        /*private void addData() {
+    private void addData() {
         page++;
         topicSwipe.setRefreshing(true);
         String url = NetConfig.HOST + "article/list/" + page + "/json";
@@ -267,6 +210,11 @@ public class DaMaiFragment extends Fragment implements
                 });
     }
 
+    @Override
+    public void onRefresh() {
+        loadData();
+    }
+
     public void fillData(List<FeedArticleBean> data) {
 
         this.data.clear();
@@ -274,8 +222,12 @@ public class DaMaiFragment extends Fragment implements
         adapter.notifyDataSetChanged();
         topicSwipe.setRefreshing(false);
 
-    }*/
+    }
 
+    private void showError(String error) {
+        topicSwipe.setRefreshing(false);
+        Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+    }
 
 
     /*static class DaMaiHandler extends Handler {
