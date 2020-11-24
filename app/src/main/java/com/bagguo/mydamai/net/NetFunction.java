@@ -1,5 +1,7 @@
 package com.bagguo.mydamai.net;
 
+import com.bagguo.mydamai.cache.DiskCache;
+
 import io.reactivex.functions.Function;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -15,6 +17,8 @@ public class NetFunction implements Function<String, String> {
                 .build();
         Response response = client.newCall(request).execute();
 
-        return response.body().string();
+        String json = response.body().string();
+        DiskCache.getInstance().set(s, json);
+        return json;
     }
 }
