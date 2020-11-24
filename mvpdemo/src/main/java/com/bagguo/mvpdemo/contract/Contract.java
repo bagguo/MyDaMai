@@ -1,12 +1,12 @@
 package com.bagguo.mvpdemo.contract;
 
-public interface Contract {
-    interface Model {
+public class Contract {
+    public interface Model {
     }
 
-    interface View {
+    public interface View {
     }
 
-    interface Presenter {
+    public interface Presenter {
     }
 }
