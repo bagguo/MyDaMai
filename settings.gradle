@@ -1,2 +1,3 @@
+include ':mvpdemo'
 include ':app'
 rootProject.name = "MyDaMai"
