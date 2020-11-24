@@ -38,6 +38,7 @@ public class NetRequest {
                     .writeTimeout(20, TimeUnit.SECONDS)
                     .readTimeout(20, TimeUnit.SECONDS)
                     .addInterceptor(interceptor)
+//                    .addInterceptor(new BasicParamsInterceptor())//添加公共参数
                     .build();
         }
 
