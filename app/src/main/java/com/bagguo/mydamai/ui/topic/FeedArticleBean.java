@@ -1,6 +1,6 @@
 package com.bagguo.mydamai.ui.topic;
 
-class FeedArticleBean {
+public class FeedArticleBean {
     /**
      * apkLink: "",
      * audit: 1,
