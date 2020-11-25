@@ -4,6 +4,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.bagguo.mydamai.cache.DiskCache;
+import com.bagguo.mydamai.cache.DiskObserver;
 import com.bagguo.mydamai.net.NetConfig;
 import com.bagguo.mydamai.net.NetObserver;
 import com.bagguo.mydamai.ui.topic.FeedArticleBean;
@@ -33,7 +34,7 @@ public class TopicPresenterImpl implements ITopicPresenter{
         Log.d(TAG, String.valueOf(Thread.currentThread()));
 
         //1 从本地取数据
-        String json = diskCache.get(url);
+        /*        String json = diskCache.get(url);
         if (!TextUtils.isEmpty(json)) {
             List<FeedArticleBean> data = null;
 
@@ -45,10 +46,16 @@ public class TopicPresenterImpl implements ITopicPresenter{
                 e.printStackTrace();
             }
             view.fillData(data, true);
-        }
+        }*/
+        model.getDataFromDisk(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
+            @Override
+            public void onNext(List<FeedArticleBean> data) {
+                view.fillData(data, true);
+            }
+        });
 
         //2 判断是否超时
-        if (!diskCache.isTimeout(url, 60 * 1000)) {
+        if (!model.isTimeOut(url, 60 * 1000)) {
             view.hideLoading();
             return;
         }
@@ -81,22 +88,15 @@ public class TopicPresenterImpl implements ITopicPresenter{
         Log.d(TAG, String.valueOf(Thread.currentThread()));
 
         //1 从本地取数据
-        String json = diskCache.get(url);
-        if (!TextUtils.isEmpty(json)) {
-            List<FeedArticleBean> data = null;
-
-            try {
-                data = new TopicModelImpl
-                        .TopicFunction()
-                        .apply(json);
-            } catch (Exception e) {
-                e.printStackTrace();
+        model.getDataFromDisk(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
+            @Override
+            public void onNext(List<FeedArticleBean> data) {
+                view.fillData(data, false);
             }
-            view.fillData(data, false);
-        }
+        });
 
         //2 判断是否超时
-        if (!diskCache.isTimeout(url, 60 * 1000)) {
+        if (!model.isTimeOut(url, 60 * 1000)) {
             view.hideLoading();
             return;
         }

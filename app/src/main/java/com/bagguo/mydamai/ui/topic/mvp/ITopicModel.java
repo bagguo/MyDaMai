@@ -20,4 +20,5 @@ public interface ITopicModel {
     //从缓存中获取数据
     Observable<List<FeedArticleBean>> getDataFromDisk(String path);
 
+    boolean isTimeOut(String path, long timeOut);
 }

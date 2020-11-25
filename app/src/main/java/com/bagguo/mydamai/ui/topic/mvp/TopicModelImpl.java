@@ -1,6 +1,8 @@
 package com.bagguo.mydamai.ui.topic.mvp;
 
 import com.alibaba.fastjson.JSONObject;
+import com.bagguo.mydamai.cache.DiskCache;
+import com.bagguo.mydamai.cache.DiskFunction;
 import com.bagguo.mydamai.net.NetFunction;
 import com.bagguo.mydamai.ui.topic.FeedArticleBean;
 
@@ -35,7 +37,16 @@ public class TopicModelImpl implements ITopicModel {
 
     @Override
     public Observable<List<FeedArticleBean>> getDataFromDisk(String path) {
-        return null;
+        return Observable.just(path)
+                .map(new DiskFunction())
+                .map(new TopicFunction())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io());
+    }
+
+    @Override
+    public boolean isTimeOut(String path, long timeOut) {
+        return DiskCache.getInstance().isTimeout(path, timeOut);
     }
 
     //内部类 用于json解析
