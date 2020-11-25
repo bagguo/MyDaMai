@@ -7,8 +7,9 @@
 
     <ImageView
         android:id="@+id/item_topic_icon"
-        android:layout_width="20dp"
-        android:layout_height="30dp" />
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@mipmap/ic_launcher"/>
 
     <TextView
         android:id="@+id/item_topic_title"

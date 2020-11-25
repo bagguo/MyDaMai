@@ -3,10 +3,14 @@ package com.bagguo.mydamai.net;
 import android.app.ProgressDialog;
 import android.content.Context;
 
+import com.bagguo.mydamai.ui.topic.FeedArticleBean;
+
+import java.util.List;
+
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
-public class NetObserver implements Observer {
+public class NetObserver<T> implements Observer<T> {
 
     private Context context;
     private ProgressDialog progressDialog;
@@ -22,7 +26,7 @@ public class NetObserver implements Observer {
     }
 
     @Override
-    public void onNext(Object o) {
+    public void onNext(T data) {
         if (progressDialog != null)
             progressDialog.dismiss();
     }

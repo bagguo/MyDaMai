@@ -16,6 +16,9 @@ import com.bagguo.mydamai.R;
 import com.bagguo.mydamai.net.NetConfig;
 import com.bagguo.mydamai.net.NetFunction;
 import com.bagguo.mydamai.net.NetObserver;
+import com.bagguo.mydamai.ui.topic.mvp.ITopicView;
+import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterImpl;
+import com.bagguo.mydamai.widget.LoadMoreRecycleView;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -44,12 +47,13 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 
-public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+public class DaMaiFragment extends Fragment
+        implements SwipeRefreshLayout.OnRefreshListener, ITopicView, LoadMoreRecycleView.OnLoadMoreListener {
 
     public static final String TAG = DaMaiFragment.class.getSimpleName();
 
     @BindView(R.id.topic_recycle)
-    RecyclerView topicRecycle;
+    LoadMoreRecycleView topicRecycle;
     @BindView(R.id.topic_swipe)
     SwipeRefreshLayout topicSwipe;
 
@@ -57,6 +61,7 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
     private Context mContext;
     private DaMaiAdapter adapter;
     private ArrayList<FeedArticleBean> data = new ArrayList<>();
+    private TopicPresenterImpl topicPresenter;
 
 //    private DaMaiHandler handler;
 
@@ -93,41 +98,7 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         LinearLayoutManager mgr = new LinearLayoutManager(mContext);
         topicRecycle.setLayoutManager(mgr);
 
-        topicRecycle.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            int lastPosition;
 
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                //闲置
-                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    //是否需要加载更多
-                    if (lastPosition == data.size() - 1) {
-                        //上拉加载，判断是否是加载中的状态，
-                        //如果正在加载，则不会再去加载
-                        if (!topicSwipe.isRefreshing()) {
-                            addData();//添加数据
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                //得到recyclerview的布局管理器
-                RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
-                //实例化线性布局管理器
-                if (manager instanceof LinearLayoutManager) {
-                    //布局管理器找到最后一个可见的条目位置赋值给最后一个可见的条目
-                    int lastVisibleItemPosition = ((LinearLayoutManager) manager).findLastVisibleItemPosition();
-                    if (lastVisibleItemPosition != -1) {
-                        //得到最后一个条目
-                        lastPosition = lastVisibleItemPosition;
-                    }
-                }
-            }
-        });
         DividerItemDecoration decoration = new DividerItemDecoration(mContext, DividerItemDecoration.VERTICAL);
         topicRecycle.addItemDecoration(decoration);
 
@@ -135,101 +106,88 @@ public class DaMaiFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         topicRecycle.setAdapter(adapter);
 
 
-        loadData();
+        topicRecycle.setOnLoadMoreListener(this);
+
+        topicPresenter = new TopicPresenterImpl(this);
+        topicPresenter.loadData();
     }
 
-    int page;
-    private void loadData() {
-        page = 0;
-        String url = NetConfig.HOST + "article/list/" + page + "/json";
-
-        //被观察者
-        Observable.just(url)
-                .map(new NetFunction())//网络请求 ,
-                .map(new Function<String, List<FeedArticleBean>>() {//解析
-                    @Override
-                    public List<FeedArticleBean> apply(String s) throws Exception {
-
-                        JSONObject object = JSONObject.parseObject(s);
-                        JSONObject data = object.getJSONObject("data");
-                        String list = data.getString("datas");
-                        List<FeedArticleBean> articles = JSONObject.parseArray(list, FeedArticleBean.class);
-                        return articles;
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread())//观察者指定主线程
-                .subscribeOn(Schedulers.io())//订阅
-                .subscribe(new NetObserver(mContext) {//订阅 观察者，处理相应动作
-                    @Override
-                    public void onNext(Object o) {
-                        super.onNext(o);
-                        fillData((List<FeedArticleBean>) o);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        super.onError(e);
-                        showError(e.getMessage());
-                    }
-                });
-    }
-
-    private void addData() {
-        page++;
-        topicSwipe.setRefreshing(true);
-        String url = NetConfig.HOST + "article/list/" + page + "/json";
-
-        //被观察者
-        Observable.just(url)
-                .map(new NetFunction())//网络请求 ,
-                .map(new Function<String, List<FeedArticleBean>>() {//解析
-                    @Override
-                    public List<FeedArticleBean> apply(String s) throws Exception {
-
-                        JSONObject object = JSONObject.parseObject(s);
-                        JSONObject data = object.getJSONObject("data");
-                        String list = data.getString("datas");
-                        List<FeedArticleBean> articles = JSONObject.parseArray(list, FeedArticleBean.class);
-                        return articles;
-                    }
-                })
-                .observeOn(AndroidSchedulers.mainThread())//观察者指定主线程
-                .subscribeOn(Schedulers.io())//订阅
-                .subscribe(new NetObserver(mContext) {//订阅 观察者，处理相应动作
-                    @Override
-                    public void onNext(Object o) {
-                        super.onNext(o);
-                        fillData((List<FeedArticleBean>) o);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        super.onError(e);
-                        showError(e.getMessage());
-                    }
-                });
-    }
 
     @Override
     public void onRefresh() {
-        loadData();
+        topicPresenter.loadData();
     }
 
-    public void fillData(List<FeedArticleBean> data) {
-
-        this.data.clear();
-        this.data.addAll(data);
-        adapter.notifyDataSetChanged();
-        topicSwipe.setRefreshing(false);
-
+    @Override
+    public void loadMore() {
+        topicPresenter.addData();
     }
 
-    private void showError(String error) {
-        topicSwipe.setRefreshing(false);
+    @Override
+    public void showError(String error) {
         Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
     }
 
+    @Override
+    public void showLoading() {
+        topicSwipe.setRefreshing(true);
+    }
 
+    @Override
+    public void hideLoading() {
+        topicSwipe.setRefreshing(false);
+    }
+
+    @Override
+    public void fillData(List<FeedArticleBean> data, boolean isPull) {
+
+        //下拉刷新。清除之前的数据
+        if (isPull) {
+            this.data.clear();
+        }else {
+            topicRecycle.setRefreshing(false);
+        }
+        this.data.addAll(data);
+        adapter.notifyDataSetChanged();
+        topicSwipe.setRefreshing(false);
+    }
+
+
+    /*topicRecycle.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        int lastPosition;
+
+        @Override
+        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+            super.onScrollStateChanged(recyclerView, newState);
+            //闲置
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                //是否需要加载更多
+                if (lastPosition == data.size() - 1) {
+                    //上拉加载，判断是否是加载中的状态，
+                    //如果正在加载，则不会再去加载
+                    if (!topicSwipe.isRefreshing()) {
+                        addData();//添加数据
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+            super.onScrolled(recyclerView, dx, dy);
+            //得到recyclerview的布局管理器
+            RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
+            //实例化线性布局管理器
+            if (manager instanceof LinearLayoutManager) {
+                //布局管理器找到最后一个可见的条目位置赋值给最后一个可见的条目
+                int lastVisibleItemPosition = ((LinearLayoutManager) manager).findLastVisibleItemPosition();
+                if (lastVisibleItemPosition != -1) {
+                    //得到最后一个条目
+                    lastPosition = lastVisibleItemPosition;
+                }
+            }
+        }
+    });*/
     /*static class DaMaiHandler extends Handler {
         private WeakReference<DaMaiFragment> weakReference;
 

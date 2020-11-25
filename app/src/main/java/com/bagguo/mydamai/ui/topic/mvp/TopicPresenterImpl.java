@@ -1,7 +1,9 @@
 package com.bagguo.mydamai.ui.topic.mvp;
 
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.bagguo.mydamai.cache.DiskCache;
 import com.bagguo.mydamai.net.NetConfig;
 import com.bagguo.mydamai.net.NetObserver;
 import com.bagguo.mydamai.ui.topic.FeedArticleBean;
@@ -12,6 +14,7 @@ public class TopicPresenterImpl implements ITopicPresenter{
 
     public static final String TAG = TopicPresenterImpl.class.getSimpleName();
 
+    private final DiskCache diskCache;
     private ITopicModel model;
     private ITopicView view;
     int page;
@@ -19,6 +22,7 @@ public class TopicPresenterImpl implements ITopicPresenter{
     public TopicPresenterImpl(ITopicView view) {
         this.view = view;
         model = new TopicModelImpl();
+        this.diskCache = DiskCache.getInstance();
     }
 
     @Override
@@ -26,16 +30,38 @@ public class TopicPresenterImpl implements ITopicPresenter{
         page = 1;
         String url = NetConfig.HOST + "article/list/" + page + "/json";
 
-        view.showLoading();
         Log.d(TAG, String.valueOf(Thread.currentThread()));
 
+        //1 从本地取数据
+        String json = diskCache.get(url);
+        if (!TextUtils.isEmpty(json)) {
+            List<FeedArticleBean> data = null;
+
+            try {
+                data = new TopicModelImpl
+                        .TopicFunction()
+                        .apply(json);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            view.fillData(data, true);
+        }
+
+        //2 判断是否超时
+        if (!diskCache.isTimeout(url, 60 * 1000)) {
+            view.hideLoading();
+            return;
+        }
+
+        //3 网球请求
+        view.showLoading();
         model.getDataFromNet(url)
-                .subscribe(new NetObserver(view.getContext()) {
+                .subscribe(new NetObserver<List<FeedArticleBean>>(view.getContext()) {
                     @Override
-                    public void onNext(Object o) {
-                        super.onNext(o);
+                    public void onNext(List<FeedArticleBean> data) {
+                        super.onNext(data);
                         view.hideLoading();
-                        view.fillData((List<FeedArticleBean>) o, true);
+                        view.fillData(data, true);
                     }
 
                     @Override
@@ -53,13 +79,37 @@ public class TopicPresenterImpl implements ITopicPresenter{
         String url = NetConfig.HOST + "article/list/" + page + "/json";
 
         Log.d(TAG, String.valueOf(Thread.currentThread()));
+
+        //1 从本地取数据
+        String json = diskCache.get(url);
+        if (!TextUtils.isEmpty(json)) {
+            List<FeedArticleBean> data = null;
+
+            try {
+                data = new TopicModelImpl
+                        .TopicFunction()
+                        .apply(json);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            view.fillData(data, false);
+        }
+
+        //2 判断是否超时
+        if (!diskCache.isTimeout(url, 60 * 1000)) {
+            view.hideLoading();
+            return;
+        }
+
+        //3 网球请求
+        view.showLoading();
         model.getDataFromNet(url)
-                .subscribe(new NetObserver(view.getContext()) {
+                .subscribe(new NetObserver<List<FeedArticleBean>>(view.getContext()) {
                     @Override
-                    public void onNext(Object o) {
-                        super.onNext(o);
+                    public void onNext(List<FeedArticleBean> data) {
+                        super.onNext(data);
                         view.hideLoading();
-                        view.fillData((List<FeedArticleBean>) o, false);
+                        view.fillData(data, false);
                     }
 
                     @Override
