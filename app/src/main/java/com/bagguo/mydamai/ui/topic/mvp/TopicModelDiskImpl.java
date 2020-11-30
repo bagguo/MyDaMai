@@ -18,7 +18,7 @@ import io.reactivex.schedulers.Schedulers;
  * model接口的实现类
  * 用于获取数据
  */
-public class TopicModelImpl implements ITopicModel {
+public class TopicModelDiskImpl implements ITopicModel {
 
     @Override
     public Observable<List<FeedArticleBean>> getDataFromNet(String path) {
@@ -30,13 +30,13 @@ public class TopicModelImpl implements ITopicModel {
          */
         return Observable.just(path)
                 .map(new NetFunction()) //网络请求
-                .map(new TopicModelImpl.TopicFunction())
+                .map(new TopicModelDiskImpl.TopicFunction())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io());//
     }
 
     @Override
-    public Observable<List<FeedArticleBean>> getDataFromDisk(String path) {
+    public Observable<List<FeedArticleBean>> getDataFromCache(String path) {
         return Observable.just(path)
                 .map(new DiskFunction())
                 .map(new TopicFunction())

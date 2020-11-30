@@ -1,6 +1,5 @@
 package com.bagguo.mydamai.ui.topic.mvp;
 
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.bagguo.mydamai.cache.DiskCache;
@@ -11,18 +10,18 @@ import com.bagguo.mydamai.ui.topic.FeedArticleBean;
 
 import java.util.List;
 
-public class TopicPresenterImpl implements ITopicPresenter{
+public class TopicPresenterDiskImpl implements ITopicPresenter{
 
-    public static final String TAG = TopicPresenterImpl.class.getSimpleName();
+    public static final String TAG = TopicPresenterDiskImpl.class.getSimpleName();
 
     private final DiskCache diskCache;
     private ITopicModel model;
     private ITopicView view;
     int page;
 
-    public TopicPresenterImpl(ITopicView view) {
+    public TopicPresenterDiskImpl(ITopicView view) {
         this.view = view;
-        model = new TopicModelImpl();
+        model = new TopicModelDiskImpl();
         this.diskCache = DiskCache.getInstance();
     }
 
@@ -47,7 +46,7 @@ public class TopicPresenterImpl implements ITopicPresenter{
             }
             view.fillData(data, true);
         }*/
-        model.getDataFromDisk(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
+        model.getDataFromCache(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
             @Override
             public void onNext(List<FeedArticleBean> data) {
                 view.fillData(data, true);
@@ -88,7 +87,7 @@ public class TopicPresenterImpl implements ITopicPresenter{
         Log.d(TAG, String.valueOf(Thread.currentThread()));
 
         //1 从本地取数据
-        model.getDataFromDisk(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
+        model.getDataFromCache(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
             @Override
             public void onNext(List<FeedArticleBean> data) {
                 view.fillData(data, false);

@@ -3,49 +3,29 @@ package com.bagguo.mydamai.ui.topic;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.alibaba.fastjson.JSONObject;
 import com.bagguo.mydamai.R;
-import com.bagguo.mydamai.net.NetConfig;
-import com.bagguo.mydamai.net.NetFunction;
-import com.bagguo.mydamai.net.NetObserver;
 import com.bagguo.mydamai.ui.topic.mvp.ITopicView;
-import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterImpl;
+import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterDBImpl;
+import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterDiskImpl;
 import com.bagguo.mydamai.widget.LoadMoreRecycleView;
 
-import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.Observable;
-import io.reactivex.Scheduler;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.logging.HttpLoggingInterceptor;
 
 public class DaMaiFragment extends Fragment
         implements SwipeRefreshLayout.OnRefreshListener, ITopicView, LoadMoreRecycleView.OnLoadMoreListener {
@@ -61,7 +41,7 @@ public class DaMaiFragment extends Fragment
     private Context mContext;
     private DaMaiAdapter adapter;
     private ArrayList<FeedArticleBean> data = new ArrayList<>();
-    private TopicPresenterImpl topicPresenter;
+    private TopicPresenterDBImpl topicPresenter;
 
 //    private DaMaiHandler handler;
 
@@ -108,7 +88,7 @@ public class DaMaiFragment extends Fragment
 
         topicRecycle.setOnLoadMoreListener(this);
 
-        topicPresenter = new TopicPresenterImpl(this);
+        topicPresenter = new TopicPresenterDBImpl(this);
         topicPresenter.loadData();
     }
 

@@ -3,10 +3,6 @@ package com.bagguo.mydamai.net;
 import android.app.ProgressDialog;
 import android.content.Context;
 
-import com.bagguo.mydamai.ui.topic.FeedArticleBean;
-
-import java.util.List;
-
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 

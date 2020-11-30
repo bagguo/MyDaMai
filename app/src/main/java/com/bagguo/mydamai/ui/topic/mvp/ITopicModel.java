@@ -18,7 +18,7 @@ public interface ITopicModel {
     Observable<List<FeedArticleBean>> getDataFromNet(String path);
 
     //从缓存中获取数据
-    Observable<List<FeedArticleBean>> getDataFromDisk(String path);
+    Observable<List<FeedArticleBean>> getDataFromCache(String path);
 
     boolean isTimeOut(String path, long timeOut);
 }
