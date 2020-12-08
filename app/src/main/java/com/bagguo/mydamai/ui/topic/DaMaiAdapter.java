@@ -9,6 +9,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bagguo.mydamai.R;
+import com.bagguo.mydamai.image.ImageLoader;
+import com.bagguo.mydamai.net.NetConfig;
 
 import java.util.ArrayList;
 
@@ -45,6 +47,11 @@ public class DaMaiAdapter extends RecyclerView.Adapter<DaMaiAdapter.DaMaiViewHol
     public void onBindViewHolder(@NonNull DaMaiViewHolder holder, int position) {
         String title = data.get(position).getTitle();
         holder.itemTopicTitle.setText(title);
+
+//        String i = bean.getI()+"";
+//        String imageURI = NetConfig.BASR_IMG + i.substring(0, i.length()-2) + "/" + i + "_n.jpg";
+//
+//        ImageLoader.load(context,imageURI,holder.itemTopicIcon);
     }
 
     @Override

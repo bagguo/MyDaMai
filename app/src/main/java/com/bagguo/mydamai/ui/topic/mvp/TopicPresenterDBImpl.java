@@ -1,5 +1,6 @@
 package com.bagguo.mydamai.ui.topic.mvp;
 
+import com.bagguo.mydamai.cache.CacheObserver;
 import com.bagguo.mydamai.cache.DiskObserver;
 import com.bagguo.mydamai.net.NetConfig;
 import com.bagguo.mydamai.net.NetObserver;
@@ -24,7 +25,7 @@ public class TopicPresenterDBImpl implements ITopicPresenter {
         String url = NetConfig.HOST + "article/list/" + page + "/json";
 
         //1.从本地获取
-        model.getDataFromCache(url).subscribe(new DiskObserver<List<FeedArticleBean>>() {
+        model.getDataFromCache(url).subscribe(new CacheObserver<List<FeedArticleBean>>() {
             @Override
             public void onNext(List<FeedArticleBean> data) {
                 view.fillData(data, true);

@@ -15,5 +15,9 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         context = this;
+
+//加快EventBus执行速度
+//        EventBus.builder().addIndex(new MyEventBusIndex())
+//                .installDefaultEventBus();
     }
 }

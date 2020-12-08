@@ -7,6 +7,7 @@ public class DiskFunction implements Function<String, String>{
 
     @Override
     public String apply(@NonNull String s) throws Exception {
-        return DiskCache.getInstance().get(s);
+        String json = DiskCache.getInstance().get(s);
+        return json;
     }
 }
