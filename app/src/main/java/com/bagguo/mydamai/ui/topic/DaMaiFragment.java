@@ -11,8 +11,7 @@ import android.widget.Toast;
 
 import com.bagguo.mydamai.R;
 import com.bagguo.mydamai.ui.topic.mvp.ITopicView;
-import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterDBImpl;
-import com.bagguo.mydamai.ui.topic.mvp.TopicPresenterDiskImpl;
+import com.bagguo.mydamai.ui.topic.mvp.retrofit.TopicRetrofitPresenter;
 import com.bagguo.mydamai.widget.LoadMoreRecycleView;
 
 import java.util.ArrayList;
@@ -41,7 +40,7 @@ public class DaMaiFragment extends Fragment
     private Context mContext;
     private DaMaiAdapter adapter;
     private ArrayList<FeedArticleBean> data = new ArrayList<>();
-    private TopicPresenterDBImpl topicPresenter;
+    private TopicRetrofitPresenter topicPresenter;
 
 //    private DaMaiHandler handler;
 
@@ -88,7 +87,7 @@ public class DaMaiFragment extends Fragment
 
         topicRecycle.setOnLoadMoreListener(this);
 
-        topicPresenter = new TopicPresenterDBImpl(this);
+        topicPresenter = new TopicRetrofitPresenter(this);
         topicPresenter.loadData();
     }
 

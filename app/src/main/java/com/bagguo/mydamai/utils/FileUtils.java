@@ -29,4 +29,22 @@ public class FileUtils {
         }
         return cache;
     }
+
+    public static File getDnsCacheFolder() {
+        File rootFolder = getCacheRootFolder();
+        File cache = new File(rootFolder, "dns");
+        if (!cache.exists()) {
+            cache.mkdir();
+        }
+        return cache;
+    }
+
+    public static File getNetCacheFloder() {
+        File rootFiloder = getCacheRootFolder();
+        File cache=new File(rootFiloder,"net");
+        if(!cache.exists()){
+            cache.mkdirs();
+        }
+        return cache;
+    }
 }

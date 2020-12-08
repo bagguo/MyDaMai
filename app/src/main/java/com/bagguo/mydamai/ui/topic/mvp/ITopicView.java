@@ -3,7 +3,6 @@ package com.bagguo.mydamai.ui.topic.mvp;
 import android.content.Context;
 
 import com.bagguo.mydamai.ui.topic.FeedArticleBean;
-import com.bagguo.mydamai.ui.topic.TopicBean;
 
 import java.util.List;
 
